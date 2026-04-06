@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard BĐS Vietnam 2025</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:#f0f4f8; --surface:#fff; --primary:#1e40af; --accent:#3b82f6;
+  --text:#1e293b; --muted:#64748b; --success:#10b981; --warn:#f59e0b;
+  --danger:#ef4444; --purple:#8b5cf6; --border:#e2e8f0;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+.header{
+  background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 100%);
+  color:#fff;padding:18px 28px;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 4px 20px rgba(30,64,175,.3);
+}
+.header h1{font-size:1.4rem;font-weight:800;letter-spacing:-.3px;}
+.header .sub{font-size:.82rem;opacity:.8;margin-top:3px;}
+.header .upd{font-size:.78rem;opacity:.65;text-align:right;}
+
+/* FILTERS */
+.filters{
+  background:#fff;border-bottom:1px solid var(--border);
+  padding:10px 28px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+}
+.filters label{font-size:.75rem;color:var(--muted);font-weight:700;
+  text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;}
+.filters select{
+  border:1px solid var(--border);border-radius:8px;
+  padding:6px 10px;font-size:.85rem;background:var(--bg);
+  cursor:pointer;color:var(--text);min-width:150px;
+}
+.filters select:focus{outline:2px solid var(--accent);}
+.btn-reset{
+  margin-left:auto;background:var(--primary);color:#fff;
+  border:none;border-radius:8px;padding:7px 16px;
+  font-size:.83rem;cursor:pointer;transition:.2s;white-space:nowrap;
+}
+.btn-reset:hover{background:#1e3a8a;}
+
+/* MAIN */
+.main{padding:20px 28px;max-width:1600px;margin:0 auto;}
+
+/* KPI CARDS */
+.kpi-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:14px;margin-bottom:20px;
+}
+.kpi-card{
+  background:#fff;border-radius:14px;
+  padding:18px 20px;box-shadow:0 2px 12px rgba(0,0,0,.06);
+  border-left:4px solid var(--accent);
+  transition:transform .2s,box-shadow .2s;
+}
+.kpi-card:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.1);}
+.kpi-card:nth-child(1){border-color:var(--accent);}
+.kpi-card:nth-child(2){border-color:var(--success);}
+.kpi-card:nth-child(3){border-color:var(--warn);}
+.kpi-card:nth-child(4){border-color:var(--purple);}
+.kpi-icon{font-size:1.6rem;margin-bottom:6px;}
+.kpi-val{font-size:1.9rem;font-weight:900;color:var(--primary);
+  font-variant-numeric:tabular-nums;line-height:1;}
+.kpi-lbl{font-size:.75rem;color:var(--muted);margin-top:5px;
+  text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
+
+/* CHART GRID */
+.row{display:grid;gap:16px;margin-bottom:16px;}
+.row-2{grid-template-columns:1fr 1fr;}
+.row-2l{grid-template-columns:1.6fr 1fr;}
+.chart-card{
+  background:#fff;border-radius:14px;
+  padding:18px;box-shadow:0 2px 12px rgba(0,0,0,.06);
+}
+.chart-card h3{
+  font-size:.9rem;color:var(--text);margin-bottom:14px;
+  font-weight:700;display:flex;align-items:center;gap:7px;
+}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex-shrink:0;}
+canvas{max-height:280px;}
+
+/* TABLE */
+.table-wrap{overflow-x:auto;max-height:380px;overflow-y:auto;}
+table{width:100%;border-collapse:collapse;font-size:.82rem;}
+thead th{
+  background:#f1f5f9;padding:9px 11px;text-align:left;
+  font-weight:700;color:var(--muted);font-size:.72rem;
+  text-transform:uppercase;letter-spacing:.05em;
+  position:sticky;top:0;z-index:1;
+}
+tbody tr{border-bottom:1px solid var(--border);transition:.12s;}
+tbody tr:hover{background:#f8fafc;}
+tbody td{padding:8px 11px;}
+.badge{
+  display:inline-block;padding:2px 8px;border-radius:999px;
+  font-size:.68rem;font-weight:700;white-space:nowrap;
+}
+.b-nha{background:#dbeafe;color:#1e40af;}
+.b-chung{background:#d1fae5;color:#065f46;}
+.b-dat{background:#fef3c7;color:#92400e;}
+.b-biet{background:#ede9fe;color:#5b21b6;}
+.b-shop{background:#fee2e2;color:#991b1b;}
+.b-other{background:#f1f5f9;color:#475569;}
+
+/* NO DATA */
+.no-data{
+  display:flex;align-items:center;justify-content:center;
+  height:160px;color:var(--muted);font-size:.9rem;
+  flex-direction:column;gap:8px;
+}
+
+footer{
+  text-align:center;padding:18px;color:var(--muted);
+  font-size:.78rem;border-top:1px solid var(--border);margin-top:24px;
+}
+
+@media(max-width:900px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr);}
+  .row-2,.row-2l{grid-template-columns:1fr;}
+  .main{padding:14px;}
+  .filters{padding:10px 14px;}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <h1>🏠 Dashboard Thị Trường Bất Động Sản Vietnam 2025</h1>
+    <div class="sub">Phân tích toàn diện · Dữ liệu thực từ vietnam_real_estates.csv</div>
+  </div>
+  <div class="upd">📅 Cập nhật: 06/04/2026</div>
+</div>
+
+<!-- FILTERS -->
+<div class="filters">
+  <label>🏙 Tỉnh/Thành</label>
+  <select id="f_tinh" onchange="applyFilter()">
+    <option value="">-- Tất cả --</option>
+    <option value="Bà Rịa - Vũng Tàu">Bà Rịa - Vũng Tàu</option><option value="Bình Dương">Bình Dương</option><option value="Hà Nội">Hà Nội</option><option value="Hòa Bình">Hòa Bình</option><option value="Hưng Yên">Hưng Yên</option><option value="Hải Phòng">Hải Phòng</option><option value="Hồ Chí Minh">Hồ Chí Minh</option><option value="Khánh Hòa">Khánh Hòa</option><option value="Kiên Giang">Kiên Giang</option><option value="Long An">Long An</option><option value="Lâm Đồng">Lâm Đồng</option><option value="Quảng Nam">Quảng Nam</option><option value="Quảng Ninh">Quảng Ninh</option><option value="Điện Biên">Điện Biên</option><option value="Đà Nẵng">Đà Nẵng</option><option value="Đồng Nai">Đồng Nai</option>
+  </select>
+  <label>🏠 Loại BĐS</label>
+  <select id="f_loai" onchange="applyFilter()">
+    <option value="">-- Tất cả --</option>
+    <option value="Biệt thự/Nhà liền kề">Biệt thự/Nhà liền kề</option><option value="Căn hộ chung cư">Căn hộ chung cư</option><option value="Nhà">Nhà</option><option value="Shophouse">Shophouse</option><option value="Đất">Đất</option>
+  </select>
+  <label>💰 Phân khúc</label>
+  <select id="f_khuc" onchange="applyFilter()">
+    <option value="">-- Tất cả --</option>
+    <option value="< 2 tỷ">< 2 tỷ</option><option value="2 - 5 tỷ">2 - 5 tỷ</option><option value="5 - 10 tỷ">5 - 10 tỷ</option><option value="10 - 20 tỷ">10 - 20 tỷ</option><option value="> 20 tỷ">> 20 tỷ</option>
+  </select>
+  <button class="btn-reset" onclick="resetFilter()">↺ Reset bộ lọc</button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- KPI CARDS -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-icon">📋</div>
+      <div class="kpi-val" id="kpi_tong">—</div>
+      <div class="kpi-lbl">Tổng tin đăng</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon">💰</div>
+      <div class="kpi-val" id="kpi_gia">—</div>
+      <div class="kpi-lbl">Giá trung bình</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon">📐</div>
+      <div class="kpi-val" id="kpi_m2">—</div>
+      <div class="kpi-lbl">Giá / m² trung bình</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon">📏</div>
+      <div class="kpi-val" id="kpi_dt">—</div>
+      <div class="kpi-lbl">Diện tích trung bình</div>
+    </div>
+  </div>
+
+  <!-- ROW 1: Xu hướng tháng -->
+  <div class="row row-2l">
+    <div class="chart-card">
+      <h3><span class="dot" style="background:#3b82f6"></span>Số Tin Đăng Theo Tháng</h3>
+      <canvas id="cTrend"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3><span class="dot" style="background:#ef4444"></span>Giá Trung Bình Theo Tháng (tỷ đồng)</h3>
+      <canvas id="cGiaThang"></canvas>
+    </div>
+  </div>
+
+  <!-- ROW 2: Tỉnh + Loại BĐS -->
+  <div class="row row-2">
+    <div class="chart-card">
+      <h3><span class="dot" style="background:#1e40af"></span>Top 10 Tỉnh/Thành — Giá TB (tỷ đồng)</h3>
+      <canvas id="cTinh"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3><span class="dot" style="background:#10b981"></span>Phân Loại Bất Động Sản</h3>
+      <canvas id="cLoai"></canvas>
+    </div>
+  </div>
+
+  <!-- ROW 3: Phân khúc + Quận huyện -->
+  <div class="row row-2">
+    <div class="chart-card">
+      <h3><span class="dot" style="background:#f59e0b"></span>Phân Khúc Giá Thị Trường</h3>
+      <canvas id="cPhanKhuc"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3><span class="dot" style="background:#8b5cf6"></span>Top 10 Quận/Huyện — Giá TB (tỷ đồng)</h3>
+      <canvas id="cQuan"></canvas>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="chart-card">
+    <h3>
+      <span class="dot" style="background:#64748b"></span>
+      Danh Sách Chi Tiết
+      <span style="margin-left:auto;font-size:.73rem;color:var(--muted);font-weight:400;" id="tbl_cnt"></span>
+    </h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>Tên BĐS</th><th>Loại</th><th>Tỉnh/Thành</th>
+            <th>Quận/Huyện</th><th>Giá (tỷ)</th><th>DT (m²)</th>
+            <th>Giá/m² (tr)</th><th>Phòng ngủ</th><th>Ngày đăng</th>
+          </tr>
+        </thead>
+        <tbody id="tblBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<footer>📊 Dashboard BĐS Vietnam 2025 · 92 records từ vietnam_real_estates.csv · Lọc tương tác theo Tỉnh / Loại BĐS / Phân khúc</footer>
+
+<script>
+// =============================================================
+// DATA — nhúng thẳng từ Python
+// =============================================================
+const RAW = [{"name": "Bán đất Thanh Đàm, ô tô vào nhà, cách phố 15m, thông số vàng 70m2 x ngang 5m, gi", "property_type_name": "Nhà", "province_name": "Hà Nội", "district_name": "Hoàng Mai", "ward_name": "Thanh Trì", "price_ty": 10.85, "area": 70.0, "price_per_m2_tr": 155.0, "bedroom_count": 0, "published_at": "2025-06-24", "thang": "2025-06", "phan_khuc": "10 - 20 tỷ"}, {"name": "Siêu rẻ. Bán đất diện tích 105m2, mặt đường Phan Tôn, trung tâm phố Tây An Thượn", "property_type_name": "Đất", "province_name": "Đà Nẵng", "district_name": "Ngũ Hành Sơn", "ward_name": "Mỹ An", "price_ty": 19.5, "area": 105.0, "price_per_m2_tr": 185.7, "bedroom_count": 0, "published_at": "2025-10-16", "thang": "2025-10", "phan_khuc": "10 - 20 tỷ"}, {"name": "Bán tòa CHDV Nguyễn Thị Minh Khai, Q1 - TN: 720tr/năm. DT: 5,7x14 - 72m2 - 5 tần", "property_type_name": "Nhà", "province_name": "Hồ Chí Minh", "district_name": "1", "ward_name": "Đa Kao", "price_ty": 19.0, "area": 72.0, "price_per_m2_tr": 263.9, "bedroom_count": 0, "published_at": "2025-06-19", "thang": "2025-06", "phan_khuc": "10 - 20 tỷ"}, {"name": "Bán Đất Tặng Nhà 2 Tầng Mặt Tiền Đường Lê Quang Đạo Đang Cho Thuê 60triệu/tháng", "property_type_name": "Đất", "province_name": "Đà Nẵng", "district_name": "Ngũ Hành Sơn", "ward_name": "Mỹ An", "price_ty": 46.0, "area": 128.0, "price_per_m2_tr": 359.4, "bedroom_count": 0, "published_at": "2025-10-29", "thang": "2025-10", "phan_khuc": "> 20 tỷ"}, {"name": "NHÀ 5 TẦNG ĐƯỜNG LÊ QUANG ĐẠO KÉO DÀI - CV THIÊN VĂN HỌC - AEON MALL DƯƠNG NỘI", "property_type_name": "Nhà", "province_name": "Hà Nội", "district_name": "Hà Đông", "ward_name": "Dương Nội", "price_ty": 15.5, "area": 50.0, "price_per_m2_tr": 310.0, "bedroom_count": 4, "published_at": "2025-09-10", "thang": "2025-09", "phan_khuc": "10 - 20 tỷ"}, {"name": "Mua căn hộ view thành phố giá chỉ từ 4 tỷ 5", "property_type_name": "Căn hộ chung cư", "province_name": "Đà Nẵng", "district_name": "Hải Châu", "ward_name": "Thạch Thang", "price_ty": 5.0, "area": 74.0, "price_per_m2_tr": 67.6, "bedroom_count": 2, "published_at": "2025-06-11", "thang": "2025-06", "phan_khuc": "2 - 5 tỷ"}, {"name": "Chính chủ bán 4 lô đất full thổ Cao Thị Đậu, Xã Phú Mỹ Hưng, Củ Chi", "property_type_name": "Đất", "province_name": "Hồ Chí Minh", "district_name": "Củ Chi", "ward_name": "Phú Mỹ Hưng", "price_ty": 2.7, "area": 150.0, "price_per_m2_tr": 18.0, "bedroom_count": 0, "published_at": "2025-09-26", "thang": "2025-09", "phan_khuc": "2 - 5 tỷ"}, {"name": "Bán nhà Đê Trần Khát Chân Hai Bà Trưng, 35m², 5 tầng, giá 7.25 tỷ", "property_type_name": "Nhà", "province_name": "Hà Nội", "district_name": "Hai Bà Trưng", "ward_name": "Thanh Nhàn", "price_ty": 7.25, "area": 35.0, "price_per_m2_tr": 207.1, "bedroom_count": 3, "published_at": "2025-09-15", "thang": "2025-09", "phan_khuc": "5 - 10 tỷ"}, {"name": "Siêu ưu đãi - căn hộ 2pn 1wc - sổ hồng riêng - sang tên nhanh - view landmark 81", "property_type_name": "Căn hộ chung cư", "province_name": "Hồ Chí Minh", "district_name": "Thủ Đức", "ward_name": "nan", "price_ty": 3.42, "area": 60.0, "price_per_m2_tr": 57.0, "bedroom_count": 2, "published_at": "2025-12-19", "thang": "2025-12", "phan_khuc": "2 - 5 tỷ"}, {"name": "Bán đất đường Tô Hiến Thành, Phường 3, Đà Lạt, Lâm Đồng", "property_type_name": "Đất", "province_name": "Lâm Đồng", "district_name": "Đà Lạt", "ward_name": "3", "price_ty": 8.0, "area": 570.0, "price_per_m2_tr": 14.0, "bedroom_count": 0, "published_at": "2025-07-03", "thang": "2025-07", "phan_khuc": "5 - 10 tỷ"}, {"name": "Nhà căn góc mặt tiền Phường 4, Quận 8 vị trí đắc địa - sổ hồng riêng nhỉnh 6 tỷ", "property_type_name": "Nhà", "province_name": "Hồ Chí Minh", "district_name": "8", "ward_name": "4", "price_ty": 6.7, "area": 51.5, "price_per_m2_tr": 130.1, "bedroom_count": 2, "published_at": "2025-07-31", "thang": "2025-07", "phan_khuc": "5 - 10 tỷ"}, {"name": "Chính chủ cần bán gấp căn hộ cao cấp Luxcity Cẩm Phả", "property_type_name": "Căn hộ chung cư", "province_name": "Quảng Ninh", "district_name": "Cẩm Phả", "ward_name": "Cẩm Bình", "price_ty": 1.89, "area": 86.0, "price_per_m2_tr": 22.0, "bedroom_count": 3, "published_at": "2025-06-18", "thang": "2025-06", "phan_khuc": "< 2 tỷ"}, {"name": "NHÀ NGANG KHỦNG 5M - BÀO CÁT TRƯỜNG CHINH - 3 LẦU BTCT - HẺM XE HƠI 7 CHỔ THÔNG ", "property_type_name": "Nhà", "province_name": "Hồ Chí Minh", "district_name": "Tân Bình", "ward_name": "14", "price_ty": 9.9, "area": 70.0, "price_per_m2_tr": 141.4, "bedroom_count": 4, "published_at": "2025-11-01", "thang": "2025-11", "phan_khuc": "5 - 10 tỷ"}, {"name": "Sót lô đất KDC Hải Sơn thẳng 1 trục ra Hoàng Diệu 2 tại Phường Linh Chiểu, Thủ Đ", "property_type_name": "Đất", "province_name": "Hồ Chí Minh", "district_name": "Thủ Đức", "ward_name": "Linh Chiểu", "price_ty": 9.9, "area": 99.0, "price_per_m2_tr": 100.0, "bedroom_count": 0, "published_at": "2025-12-06", "thang": "2025-12", "phan_khuc": "5 - 10 tỷ"}, {"name": "Bán nhà ~40m2 tại Yên Nghĩa - Hà Đông. Chỉ 3tỷ250tr", "property_type_name": "Nhà", "province_name": "Hà Nội", "district_name": "Hà Đông", "ward_name": "Yên Nghĩa", "price_ty": 3.25, "area": 38.0, "price_per_m2_tr": 85.5, "bedroom_count": 2, "published_at": "2025-12-01", "thang": "2025-12", "phan_khuc": "2 - 5 tỷ"}, {"name": "Chính chủ gửi bán lô đất 503m/75m thổ cư tại thôn Nhòn, Tiến Xuân, Thạch Thất gi", "property_type_name": "Đất", "province_name": "Hà Nội", "district_name": "Thạch Thất", "ward_name": "nan", "price_ty": 6.29, "area": 503.0, "price_per_m2_tr": 12.5, "bedroom_count": 0, "published_at": "2025-07-25", "thang": "2025-07", "phan_khuc": "5 - 10 tỷ"}, {"name": "Bán đất Gần Biển 400m Phù hợp xây căn hộ- Đường Hoàng Diệu- Vĩnh Nguyên", "property_type_name": "Đất", "province_name": "Khánh Hòa", "district_name": "Nha Trang", "ward_name": "Vĩnh Nguyên", "price_ty": 8.55, "area": 90.0, "price_per_m2_tr": 95.0, "bedroom_count": 0, "published_at": "2025-11-07", "thang": "2025-11", "phan_khuc": "5 - 10 tỷ"}, {"name": "Hẻm Trần Hưng Đạo Q1 - Hoàn công đủ - 1 Trệt + 1 Lầu - 16.6m2 - Nhỉnh 3 tỷ", "property_type_name": "Nhà", "province_name": "Hồ Chí Minh", "district_name": "1", "ward_name": "Phạm Ngũ Lão", "price_ty": 3.2, "area": 16.0, "price_per_m2_tr": 200.0, "bedroom_count": 1, "published_at": "2025-10-05", "thang": "2025-10", "phan_khuc": "2 - 5 tỷ"}, {"name": "Chỉnh bán shophouse Vincom Điện Biên 7,5 tỷ/căn. Lh", "property_type_name": "Shophouse", "province_name": "Điện Biên", "district_name": "Điện Biên Phủ", "ward_name": "Mường Thanh", "price_ty": 7.5, "area": 100.0, "price_per_m2_tr": 75.0, "bedroom_count": 0, "published_at": "2025-10-20", "thang": "2025-10", "phan_khuc": "5 - 10 tỷ"}, {"name": "Bán nhà đẹp đường số 37 Phường Tân Quy quận 7| full nội thất giá hot!", "property_type_name": "Nhà", "province_name": "Hồ Chí Minh", "district_name": "7", "ward_name": "Tân Quy", "price_ty": 15.0, "area": 84.0, "price_per_m2_tr": 178.6, "bedroom_count": 4, "published_at": "2025-08-21", "thang": "2025-08", "phan_khuc": "10 - 20 tỷ"}, {"name": "Bán nhà 5 tầng mặt tiền Nguyễn Cửu Vân, Bình Thạnh, gần Xô Viết Nghệ Tĩnh, DT 4x", "property_type_name": "Nhà", "province_name": "Hồ Chí Minh", "district_name": "Bình Thạnh", "ward_name": "17", "price_ty": 17.5, "area": 56.0, "price_per_m2_tr": 312.5, "bedroom_count": 5, "published_at": "2025-07-28", "thang": "2025-07", "phan_khuc": "10 - 20 tỷ"}, {"name": "Bán căn hộ 2PN, 2WC, 67m2 tại Vinhomes Grand Park, 3,150 tỷ, view đẹp", "property_type_name": "Căn hộ chung cư", "province_name": "Hồ Chí Minh", "district_name": "Thủ Đức", "ward_name": "Long Thạnh Mỹ", "price_ty": 3.15, "area": 67.0, "price_per_m2_tr": 47.0, "bedroom_count": 2, "published_at": "2025-08-19", "thang": "2025-08", "phan_khuc": "2 - 5 tỷ"}, {"name": "Bán CC Alluvia City, Văn Giang, Hưng Yên, 65 triệu/m2, 60m2", "property_type_name": "Căn hộ chung cư", "province_name": "Hưng Yên", "district_name": "Văn Giang", "ward_name": "Văn Giang", "price_ty": 3.9, "area": 60.0, "price_per_m2_tr": 65.0, "bedroom_count": 0, "published_at": "2025-12-12", "thang": "2025-12", "phan_khuc": "2 - 5 tỷ"}, {"name": "Bán gấp nhà riêng 30.3m2, 13 tỷ tại Hoàng Hoa Thám, Ngọc Hà, Ba Đình, Hà Nội", "property_type_name": "Nhà", "province_name": "Hà Nội", "district_name": "Ba Đình", "ward_name": "nan", "price_ty": 13.0, "area": 30.3, "price_per_m2_tr": 429.0, "bedroom_count": 3, "published_at": "2025-10-15", "thang": "2025-10", "phan_khuc": "10 - 20 tỷ"}, {"name": "Nhà Hà Kế Tấn, Trường Chinh full nội thất, tặng phòng karaoke xịn xò, 10m ra mặt", "property_type_name": "Nhà", "province_name": "Hà Nội", "district_name": "Thanh Xuân", "ward_name": "Phương Liệt", "price_ty": 14.0, "area": 50.0, "price_per_m2_tr": 280.0, "bedroom_count": 0, "published_at": "2025-10-22", "thang": "2025-10", "phan_khuc": "10 - 20 tỷ"}, {"name": "Bán gấp Căn hộ chung cư 3,8 tỷ, 72 m2 tại SkyM, Hoàng Quốc Việt, Hạ Long, Quảng ", "property_type_name": "Căn hộ chung cư", "province_name": "Quảng Ninh", "district_name": "Hạ Long", "ward_name": "Hùng Thắng", "price_ty": 3.8, "area": 72.0, "price_per_m2_tr": 52.8, "bedroom_count": 0, "published_at": "2025-08-01", "thang": "2025-08", "phan_khuc": "2 - 5 tỷ"}, {"name": "Bán gấp biệt thự thô Garden city Long Biên 210m2, 4 tầng, lô góc, giá 205 tr/m2.", "property_type_name": "Biệt thự/Nhà liền kề", "province_name": "Hà Nội", "district_name": "Long Biên", "ward_name": "Thạch Bàn", "price_ty": 43.05, "area": 210.0, "price_per_m2_tr": 205.0, "bedroom_count": 4, "published_at": "2025-08-07", "thang": "2025-08", "phan_khuc": "> 20 tỷ"}, {"name": "Biệt thự sông Hàn (12x25m) 300m2 đất 500m2 sàn, giá 44 tỷ: cọc chính chủ", "property_type_name": "Biệt thự/Nhà liền kề", "province_name": "Đà Nẵng", "district_name": "Hải Châu", "ward_name": "Hòa Cường Nam", "price_ty": 44.0, "area": 300.0, "price_per_m2_tr": 146.7, "bedroom_count": 6, "published_at": "2025-07-30", "thang": "2025-07", "phan_khuc": "> 20 tỷ"}, {"name": "Quỹ căn chuyển nhượng Vinhomes Times City giá tốt nhất thị trường tháng 11/2025.", "property_type_name": "Căn hộ chung cư", "province_name": "Hà Nội", "district_name": "Hai Bà Trưng", "ward_name": "nan", "price_ty": 8.9, "area": 83.0, "price_per_m2_tr": 107.2, "bedroom_count": 2, "published_at": "2025-11-06", "thang": "2025-11", "phan_khuc": "5 - 10 tỷ"}, {"name": "Chỉ 2.6 tỷ (30%) sở hữu ngay nhà phố gần trung tâm hành chính mới Hải Phòng", "property_type_name": "Shophouse", "province_name": "Hải Phòng", "district_name": "Thủy Nguyên", "ward_name": "Hoa Động", "price_ty": 7.9, "area": 82.5, "price_per_m2_tr": 95.8, "bedroom_count": 0, "published_at": "2025-11-03", "thang": "2025-11", "phan_khuc": "5 - 10 tỷ"}, {"name": "Hiếm! Tòa CHDV 7 tầng lô góc, nhà mới tinh, Full công năng, Trung Tâm Đống Đa", "property_type_name": "Nhà", "province_name": "Hà Nội", "district_name": "Đống Đa", "ward_name": "Láng Thượng", "price_ty": 15.9, "area": 59.8, "price_per_m2_tr": 265.9, "bedroom_count": 0, "published_at": "2025-07-11", "thang": "2025-07", "phan_khuc": "10 - 20 tỷ"}, {"name": "Bán Nhà Mới 6 Tầng Có Thang Máy Ô Tô Đỗ Cửa Cầu Cốc Tây Mỗ Gần Vinhomes", "property_type_name": "Nhà", "province_name": "Hà Nội", "district_name": "Nam Từ Liêm", "ward_name": "Tây Mỗ", "price_ty": 10.0, "area": 51.0, "price_per_m2_tr": 196.1, "bedroom_count": 0, "published_at": "2025-08-07", "thang": "2025-08", "phan_khuc": "5 - 10 tỷ"}, {"name": "Sập hầm nhà 2 mặt tiền kinh doanh Phó Đức Chính - Sơn Trà. Diện tích 110m2. Giá ", "property_type_name": "Nhà", "province_name": "Đà Nẵng", "district_name": "Sơn Trà", "ward_name": "An Hải Bắc", "price_ty": 11.0, "area": 110.0, "price_per_m2_tr": 100.0, "bedroom_count": 2, "published_at": "2025-09-11", "thang": "2025-09", "phan_khuc": "10 - 20 tỷ"}, {"name": "Bán nhà phố Lạc Long Quân kinh doanh ô tô tránh vài bước ra Hồ Tây lộng gió vị t", "property_type_name": "Nhà", "province_name": "Hà Nội", "district_name": "Tây Hồ", "ward_name": "Xuân La", "price_ty": 13.6, "area": 45.0, "price_per_m2_tr": 302.2, "bedroom_count": 4, "published_at": "2025-07-11", "thang": "2025-07", "phan_khuc": "10 - 20 tỷ"}, {"name": "Nhà chính chủ gửi cần bán gấp thuộc Phường Đông Hưng Thuận, Q12, DT: 4 x 15m đúc", "property_type_name": "Nhà", "province_name": "Hồ Chí Minh", "district_name": "12", "ward_name": "Đông Hưng Thuận", "price_ty": 4.1, "area": 60.0, "price_per_m2_tr": 68.3, "bedroom_count": 0, "published_at": "2025-07-02", "thang": "2025-07", "phan_khuc": "2 - 5 tỷ"}, {"name": "Bán đất tại Đường Tàm Xá, 105 triệu / m2, 120 m2, giá tốt", "property_type_name": "Đất", "province_name": "Hà Nội", "district_name": "Đông Anh", "ward_name": "Tàm Xá", "price_ty": 12.6, "area": 120.0, "price_per_m2_tr": 105.0, "bedroom_count": 0, "published_at": "2025-12-04", "thang": "2025-12", "phan_khuc": "10 - 20 tỷ"}, {"name": "Bán CC Goldmark City, 9,4 tỷ, 104m2, 3PN, 2WC, pháp lý đầy đủ, Bắc Từ Liêm, Hà N", "property_type_name": "Căn hộ chung cư", "province_name": "Hà Nội", "district_name": "Bắc Từ Liêm", "ward_name": "Phú Diễn", "price_ty": 9.4, "area": 104.0, "price_per_m2_tr": 90.4, "bedroom_count": 3, "published_at": "2025-12-05", "thang": "2025-12", "phan_khuc": "5 - 10 tỷ"}, {"name": "Chốt nhanh nhà mới Trần Phú - Nha Trang 5 tỷ bao sổ, hẻm rộng, gần biển", "property_type_name": "Nhà", "province_name": "Khánh Hòa", "district_name": "Nha Trang", "ward_name": "Vĩnh Nguyên", "price_ty": 5.0, "area": 66.9, "price_per_m2_tr": 74.7, "bedroom_count": 3, "published_at": "2025-06-02", "thang": "2025-06", "phan_khuc": "2 - 5 tỷ"}, {"name": "2 PN 2 ban công CT2 Phước Hải full nội thất giá bán 3,2 tỷ. LH: [phone_number]là", "property_type_name": "Căn hộ chung cư", "province_name": "Khánh Hòa", "district_name": "Nha Trang", "ward_name": "Phước Hải", "price_ty": 3.2, "area": 70.0, "price_per_m2_tr": 45.7, "bedroom_count": 2, "published_at": "2025-08-20", "thang": "2025-08", "phan_khuc": "2 - 5 tỷ"}, {"name": "Bán nhà mặt phố giá cắt cổ chỉ 12.5 tỷ đường giải phóng 30m 1 tầng mặt tiền 7.4m", "property_type_name": "Nhà", "province_name": "Hà Nội", "district_name": "Hai Bà Trưng", "ward_name": "Bách Khoa", "price_ty": 12.5, "area": 30.0, "price_per_m2_tr": 416.7, "bedroom_count": 0, "published_at": "2025-07-05", "thang": "2025-07", "phan_khuc": "10 - 20 tỷ"}, {"name": "Bán nhà riêng tại Trịnh Văn Bô, 6,9 tỷ, 35m2, 5 tầng, 3PN, 4WC, giá ưu đãi", "property_type_name": "Nhà", "province_name": "Hà Nội", "district_name": "Nam Từ Liêm", "ward_name": "Xuân Phương", "price_ty": 6.9, "area": 35.0, "price_per_m2_tr": 197.1, "bedroom_count": 3, "published_at": "2025-12-13", "thang": "2025-12", "phan_khuc": "5 - 10 tỷ"}, {"name": "Chủ nhà bán căn góc 3 ngủ 2WC 85m2 tầng trung, view đẹp, đủ đồ, sổ đỏ. Giá 8,5 t", "property_type_name": "Căn hộ chung cư", "province_name": "Hà Nội", "district_name": "Thanh Xuân", "ward_name": "Nhân Chính", "price_ty": 8.5, "area": 85.0, "price_per_m2_tr": 100.0, "bedroom_count": 3, "published_at": "2025-08-04", "thang": "2025-08", "phan_khuc": "5 - 10 tỷ"}, {"name": "Mở bán biệt thự liền kề khu Ciputra ngay cạnh công viên 65ha. Giá chỉ hơn 300tr/", "property_type_name": "Biệt thự/Nhà liền kề", "province_name": "Hà Nội", "district_name": "Tây Hồ", "ward_name": "Phú Thượng", "price_ty": 38.4, "area": 120.0, "price_per_m2_tr": 320.0, "bedroom_count": 0, "published_at": "2025-06-23", "thang": "2025-06", "phan_khuc": "> 20 tỷ"}, {"name": "6,75 tỉ - nhà phố 4 tầng - gần ngã 5 - quang trung - p.10 - gò vấp", "property_type_name": "Nhà", "province_name": "Hồ Chí Minh", "district_name": "Gò Vấp", "ward_name": "10", "price_ty": 6.75, "area": 48.0, "price_per_m2_tr": 140.6, "bedroom_count": 4, "published_at": "2025-10-06", "thang": "2025-10", "phan_khuc": "5 - 10 tỷ"}, {"name": "Siêu hot bán CC Imperia Sola Park, Tây Mỗ, Nam Từ Liêm, Hà Nội, 3,2 tỷ, 43m2", "property_type_name": "Căn hộ chung cư", "province_name": "Hà Nội", "district_name": "Nam Từ Liêm", "ward_name": "Tây Mỗ", "price_ty": 3.2, "area": 43.0, "price_per_m2_tr": 74.4, "bedroom_count": 1, "published_at": "2025-09-18", "thang": "2025-09", "phan_khuc": "2 - 5 tỷ"}, {"name": "Chào bán 2 lô đất liền kề view sông vị trí vàng Hội An - Nguyễn Duy Hiệu", "property_type_name": "Đất", "province_name": "Quảng Nam", "district_name": "Hội An", "ward_name": "Cẩm Châu", "price_ty": 34.97, "area": 1465.6, "price_per_m2_tr": 23.9, "bedroom_count": 0, "published_at": "2025-07-23", "thang": "2025-07", "phan_khuc": "> 20 tỷ"}, {"name": "ĐÓN SÓNG APEC 2027 PHÚ QUỐC- TÂM ĐIỂM HOÀNG HÔN VIỆT NAM", "property_type_name": "Căn hộ chung cư", "province_name": "Kiên Giang", "district_name": "Phú Quốc", "ward_name": "An Thới", "price_ty": 3.0, "area": 30.0, "price_per_m2_tr": 100.0, "bedroom_count": 1, "published_at": "2025-12-23", "thang": "2025-12", "phan_khuc": "2 - 5 tỷ"}, {"name": "SIÊU DẺ - GIÁ ĐẦU TƯ - Ỷ LA - HÀ ĐÔNG. Nhà đẹp ở ngay 74m - 4T - 6.5m - 9.1 tỷ", "property_type_name": "Nhà", "province_name": "Hà Nội", "district_name": "Hà Đông", "ward_name": "Dương Nội", "price_ty": 9.1, "area": 74.0, "price_per_m2_tr": 123.0, "bedroom_count": 0, "published_at": "2025-10-15", "thang": "2025-10", "phan_khuc": "5 - 10 tỷ"}, {"name": "Bán tòa văn phòng phân lô ngõ 35 Trần Kim Xuyến, MT 6.2m, DT 80m2, vỉa hè, ô tô ", "property_type_name": "Nhà", "province_name": "Hà Nội", "district_name": "Cầu Giấy", "ward_name": "Trung Hòa", "price_ty": 36.0, "area": 80.0, "price_per_m2_tr": 450.0, "bedroom_count": 8, "published_at": "2025-09-29", "thang": "2025-09", "phan_khuc": "> 20 tỷ"}, {"name": "Rẻ hơn căn khác 4 tỷ. cần tiền bán gấp. biệt thự kđt bảo sơn 220m. giá 29.5 tỷ. ", "property_type_name": "Biệt thự/Nhà liền kề", "province_name": "Hà Nội", "district_name": "Hoài Đức", "ward_name": "An Khánh", "price_ty": 29.5, "area": 220.0, "price_per_m2_tr": 134.1, "bedroom_count": 0, "published_at": "2025-11-08", "thang": "2025-11", "phan_khuc": "> 20 tỷ"}, {"name": "BÁN 100 m đất full thổ giá chỉ hơn 20 tr 1 m. Nằm sát quy hoach tổ hợp y tế khu ", "property_type_name": "Đất", "province_name": "Hà Nội", "district_name": "Quốc Oai", "ward_name": "Phú Cát", "price_ty": 2.7, "area": 100.0, "price_per_m2_tr": 27.0, "bedroom_count": 0, "published_at": "2025-09-03", "thang": "2025-09", "phan_khuc": "2 - 5 tỷ"}, {"name": "Bán nhà 4 tầng siêu đẹp tại Đức Thượng Hoài Đức, diện tích 96m2, gần Quốc Lộ 32", "property_type_name": "Nhà", "province_name": "Hà Nội", "district_name": "Hoài Đức", "ward_name": "Đức Thượng", "price_ty": 7.68, "area": 96.0, "price_per_m2_tr": 80.0, "bedroom_count": 0, "published_at": "2025-09-22", "thang": "2025-09", "phan_khuc": "5 - 10 tỷ"}, {"name": "Đại lý F1 dự án, xuất nội bộ dự án D-Aqua Quận 8 studio chỉ 1,9 tỷ. LH", "property_type_name": "Căn hộ chung cư", "province_name": "Hồ Chí Minh", "district_name": "8", "ward_name": "14", "price_ty": 1.9, "area": 31.0, "price_per_m2_tr": 61.3, "bedroom_count": 1, "published_at": "2025-10-17", "thang": "2025-10", "phan_khuc": "< 2 tỷ"}, {"name": "MỞ BÁN ! Dự án Mặt Tiền Đường số 11 - P. Trường Thọ - Ngay Vành Đai 2 - Tp Thủ Đ", "property_type_name": "Đất", "province_name": "Hồ Chí Minh", "district_name": "Thủ Đức", "ward_name": "Trường Thọ", "price_ty": 5.8, "area": 63.0, "price_per_m2_tr": 92.1, "bedroom_count": 0, "published_at": "2025-09-27", "thang": "2025-09", "phan_khuc": "5 - 10 tỷ"}, {"name": "Nhỉnh 5 tỷ - Ngoạ Long 34m2, 5 tầng nhà mới keng ô tô đỗ ở sướng", "property_type_name": "Nhà", "province_name": "Hà Nội", "district_name": "Bắc Từ Liêm", "ward_name": "Minh Khai", "price_ty": 5.0, "area": 34.0, "price_per_m2_tr": 147.1, "bedroom_count": 3, "published_at": "2025-08-01", "thang": "2025-08", "phan_khuc": "2 - 5 tỷ"}, {"name": "Bán gấp nhà xây ở nhưng chuyển công tác cần bán gấp lại, giá rẻ cho anh/chị cần ", "property_type_name": "Nhà", "province_name": "Đồng Nai", "district_name": "Vĩnh Cửu", "ward_name": "Thạnh Phú", "price_ty": 2.25, "area": 90.0, "price_per_m2_tr": 25.0, "bedroom_count": 0, "published_at": "2025-08-07", "thang": "2025-08", "phan_khuc": "2 - 5 tỷ"}, {"name": "Bán đất tại Đường 21 xã Phú Cát gần ga đường sắt metro số5 cách trường Đại Học Q", "property_type_name": "Đất", "province_name": "Hà Nội", "district_name": "Quốc Oai", "ward_name": "Phú Cát", "price_ty": 3.3, "area": 110.0, "price_per_m2_tr": 30.0, "bedroom_count": 0, "published_at": "2025-08-31", "thang": "2025-08", "phan_khuc": "2 - 5 tỷ"}, {"name": "Bán CC tại Khu đô thị mới Đại Thanh, 3,3 tỷ, 59m2, 2PN, 1WC, phong thủy chuẩn", "property_type_name": "Căn hộ chung cư", "province_name": "Hà Nội", "district_name": "Thanh Trì", "ward_name": "Tả Thanh Oai", "price_ty": 3.3, "area": 59.0, "price_per_m2_tr": 55.9, "bedroom_count": 2, "published_at": "2025-11-11", "thang": "2025-11", "phan_khuc": "2 - 5 tỷ"}, {"name": "Bán đất tặng nhà 2 mặt kiệt ô tô 6m Lê Hữu Trác, DT 155m2, gần chợ An Hải Đông, ", "property_type_name": "Nhà", "province_name": "Đà Nẵng", "district_name": "Sơn Trà", "ward_name": "An Hải Bắc", "price_ty": 11.0, "area": 155.0, "price_per_m2_tr": 71.0, "bedroom_count": 4, "published_at": "2025-07-14", "thang": "2025-07", "phan_khuc": "10 - 20 tỷ"}, {"name": "Bán đất 227m2, giá 42,7 triệu/m2 P. Bình Trưng Tây. TP Thủ Đức. LH:", "property_type_name": "Đất", "province_name": "Hồ Chí Minh", "district_name": "nan", "ward_name": "nan", "price_ty": 9.7, "area": 227.0, "price_per_m2_tr": 42.7, "bedroom_count": 0, "published_at": "2025-06-30", "thang": "2025-06", "phan_khuc": "5 - 10 tỷ"}, {"name": "Cc bán căn nhà mặt tiền Nguyễn như hạnh Dt 100m đất vị trí kinh doanh Công năng ", "property_type_name": "Nhà", "province_name": "Đà Nẵng", "district_name": "Liên Chiểu", "ward_name": "Hòa Minh", "price_ty": 8.95, "area": 100.0, "price_per_m2_tr": 89.5, "bedroom_count": 0, "published_at": "2025-12-26", "thang": "2025-12", "phan_khuc": "5 - 10 tỷ"}, {"name": "Bán nhà 3 tầng - KĐT Mỹ Gia gói 5 - Nha Trang full nội thất cao cấp chỉ 7 tỷ 950", "property_type_name": "Nhà", "province_name": "Khánh Hòa", "district_name": "Nha Trang", "ward_name": "Vĩnh Thái", "price_ty": 7.95, "area": 100.0, "price_per_m2_tr": 79.5, "bedroom_count": 3, "published_at": "2025-08-01", "thang": "2025-08", "phan_khuc": "5 - 10 tỷ"}, {"name": "Bán nhà Quận 7 - chỉ 95 triệu /m2 - 5 x 20m - SHR - cách Nguyễn Thị Thập 20m - P", "property_type_name": "Nhà", "province_name": "Hồ Chí Minh", "district_name": "7", "ward_name": "Tân Quy", "price_ty": 9.5, "area": 100.0, "price_per_m2_tr": 95.0, "bedroom_count": 8, "published_at": "2025-10-19", "thang": "2025-10", "phan_khuc": "5 - 10 tỷ"}, {"name": "Chuyên bán căn hộ Silver Sea 2PN. Bán căn 105m2 2PN 2WC. Giá chỉ 3,6 tỷ. LH: Ms.", "property_type_name": "Căn hộ chung cư", "province_name": "Bà Rịa - Vũng Tàu", "district_name": "Vũng Tàu", "ward_name": "nan", "price_ty": 3.6, "area": 105.0, "price_per_m2_tr": 34.3, "bedroom_count": 2, "published_at": "2025-07-30", "thang": "2025-07", "phan_khuc": "2 - 5 tỷ"}, {"name": "CHÍNH THỨC BLOCK C VIEW SÔNG! TƯ VẤN HỖ TRỢ HỒ SƠ VÀ THỦ TỤC XÉT DUYỆT MUA :", "property_type_name": "Căn hộ chung cư", "province_name": "Hồ Chí Minh", "district_name": "nan", "ward_name": "nan", "price_ty": 2.03, "area": 62.0, "price_per_m2_tr": 32.7, "bedroom_count": 2, "published_at": "2025-07-14", "thang": "2025-07", "phan_khuc": "2 - 5 tỷ"}, {"name": "11,6 tỷ CCMN Võ Chí Công, 42m2, 10 phòng, 50tr/th", "property_type_name": "Nhà", "province_name": "Hà Nội", "district_name": "Cầu Giấy", "ward_name": "Nghĩa Đô", "price_ty": 11.6, "area": 42.0, "price_per_m2_tr": 276.2, "bedroom_count": 10, "published_at": "2025-08-29", "thang": "2025-08", "phan_khuc": "10 - 20 tỷ"}, {"name": "Bán căn hộ view hồ tây - 2pn kosmo tây hồ - 11,3 tỷ", "property_type_name": "Căn hộ chung cư", "province_name": "Hà Nội", "district_name": "Bắc Từ Liêm", "ward_name": "Xuân Tảo", "price_ty": 11.5, "area": 83.7, "price_per_m2_tr": 137.4, "bedroom_count": 2, "published_at": "2025-12-04", "thang": "2025-12", "phan_khuc": "10 - 20 tỷ"}, {"name": "Thật 100%- nhà mới đẹp + thang máy, hẻm 8m Lê Văn Sỹ, Phú Nhuận. DT 4x 16m- 5 tầ", "property_type_name": "Nhà", "province_name": "Hồ Chí Minh", "district_name": "Phú Nhuận", "ward_name": "nan", "price_ty": 13.5, "area": 64.0, "price_per_m2_tr": 210.9, "bedroom_count": 5, "published_at": "2025-12-13", "thang": "2025-12", "phan_khuc": "10 - 20 tỷ"}, {"name": "Chính chủ cần bán gấp căn hộ 124m2 3pn 2vs full nội thất slot oto 9.6 tỷ tại Thă", "property_type_name": "Căn hộ chung cư", "province_name": "Hà Nội", "district_name": "Cầu Giấy", "ward_name": "Dịch Vọng", "price_ty": 9.6, "area": 124.0, "price_per_m2_tr": 77.4, "bedroom_count": 0, "published_at": "2025-08-26", "thang": "2025-08", "phan_khuc": "5 - 10 tỷ"}, {"name": "Chủ gởi bán mặt tiền đường an thượng ngủ hành Sơn TPĐN", "property_type_name": "Nhà", "province_name": "Đà Nẵng", "district_name": "Ngũ Hành Sơn", "ward_name": "Mỹ An", "price_ty": 45.0, "area": 120.0, "price_per_m2_tr": 375.0, "bedroom_count": 0, "published_at": "2025-08-06", "thang": "2025-08", "phan_khuc": "> 20 tỷ"}, {"name": "CC bán nhanh căn hộ Sky Garden 3, Phú Mỹ Hưng. Căn 2PN, full NT, nhận nhà ở ngay", "property_type_name": "Căn hộ chung cư", "province_name": "Hồ Chí Minh", "district_name": "7", "ward_name": "Phú Mỹ", "price_ty": 3.8, "area": 56.0, "price_per_m2_tr": 67.9, "bedroom_count": 2, "published_at": "2025-10-03", "thang": "2025-10", "phan_khuc": "2 - 5 tỷ"}, {"name": "Bán nhà Trần Cung, dt65m, mt8m, ô tô đỗ gần, sát phố, kinh doanh", "property_type_name": "Nhà", "province_name": "Hà Nội", "district_name": "Cầu Giấy", "ward_name": "Nghĩa Đô", "price_ty": 15.3, "area": 65.0, "price_per_m2_tr": 235.4, "bedroom_count": 0, "published_at": "2025-11-12", "thang": "2025-11", "phan_khuc": "10 - 20 tỷ"}, {"name": "Đất nền bán gấp tại Đoàn Kết, Vân Đồn, Quảng Ninh, 11,5 tỷ, 166m2", "property_type_name": "Đất", "province_name": "Quảng Ninh", "district_name": "Vân Đồn", "ward_name": "Đoàn Kết", "price_ty": 11.5, "area": 166.0, "price_per_m2_tr": 69.3, "bedroom_count": 0, "published_at": "2025-07-14", "thang": "2025-07", "phan_khuc": "10 - 20 tỷ"}, {"name": "Bán mặt tiền Nguyên Hồng, P11, Bình Thạnh, (5,2m x 17m) 75m2 TXD mới 5 tầng giá ", "property_type_name": "Nhà", "province_name": "Hồ Chí Minh", "district_name": "Bình Thạnh", "ward_name": "11", "price_ty": 12.9, "area": 75.0, "price_per_m2_tr": 172.0, "bedroom_count": 0, "published_at": "2025-09-23", "thang": "2025-09", "phan_khuc": "10 - 20 tỷ"}, {"name": "Duy nhất 1 căn view Sông Lạch tray mát mẻ chỉ cần vốn 890tr - Sentosa Sky park", "property_type_name": "Căn hộ chung cư", "province_name": "Hải Phòng", "district_name": "Lê Chân", "ward_name": "Kênh Dương", "price_ty": 3.1, "area": 70.0, "price_per_m2_tr": 44.3, "bedroom_count": 2, "published_at": "2025-11-10", "thang": "2025-11", "phan_khuc": "2 - 5 tỷ"}, {"name": "Nhà bán Hẻm 225// Đường Lê Văn Quới. Dt 4m x 11m. 1tret 1 lầu giá 4 tỷ 250", "property_type_name": "Nhà", "province_name": "Hồ Chí Minh", "district_name": "Bình Tân", "ward_name": "Bình Trị Đông", "price_ty": 4.25, "area": 45.0, "price_per_m2_tr": 94.4, "bedroom_count": 2, "published_at": "2025-10-05", "thang": "2025-10", "phan_khuc": "2 - 5 tỷ"}, {"name": "Gần 8000 m2 CLN Xã Phước Hiệp, Củ Chi", "property_type_name": "Đất", "province_name": "Hồ Chí Minh", "district_name": "Củ Chi", "ward_name": "Phước Thạnh", "price_ty": 20.0, "area": 7916.0, "price_per_m2_tr": 2.5, "bedroom_count": 0, "published_at": "2025-06-04", "thang": "2025-06", "phan_khuc": "10 - 20 tỷ"}, {"name": "Cần bán căn hộ studio The Garden Mễ trì, DT 42m2, full đồ. LH Kiều Thuý", "property_type_name": "Căn hộ chung cư", "province_name": "Hà Nội", "district_name": "Nam Từ Liêm", "ward_name": "Mỹ Đình 1", "price_ty": 4.3, "area": 42.0, "price_per_m2_tr": 102.4, "bedroom_count": 1, "published_at": "2025-08-16", "thang": "2025-08", "phan_khuc": "2 - 5 tỷ"}, {"name": "Hạ giá bán gấp mặt tiền yersin p.ntb ,q1-dt: 8x20m xây hầm 7 lầu hợp đồng thuê 1", "property_type_name": "Nhà", "province_name": "Hồ Chí Minh", "district_name": "1", "ward_name": "Nguyễn Thái Bình", "price_ty": 85.0, "area": 160.0, "price_per_m2_tr": 531.2, "bedroom_count": 0, "published_at": "2025-06-12", "thang": "2025-06", "phan_khuc": "> 20 tỷ"}, {"name": "Trần Phú, 40m2 x 5 tầng, MT 4.2m, ngõ thông, cách phố 30m, ba gác tránh xe máy, ", "property_type_name": "Nhà", "province_name": "Hà Nội", "district_name": "Hà Đông", "ward_name": "Văn Quán", "price_ty": 6.8, "area": 40.0, "price_per_m2_tr": 170.0, "bedroom_count": 3, "published_at": "2025-08-13", "thang": "2025-08", "phan_khuc": "5 - 10 tỷ"}, {"name": "View sông, lô góc 166m2, khu đô thị sinh thái, mặt tiền Minh Mạng, chỉ 7.19 tỷ N", "property_type_name": "Đất", "province_name": "Đà Nẵng", "district_name": "Ngũ Hành Sơn", "ward_name": "Hòa Quý", "price_ty": 7.19, "area": 166.0, "price_per_m2_tr": 43.3, "bedroom_count": 0, "published_at": "2025-09-01", "thang": "2025-09", "phan_khuc": "5 - 10 tỷ"}, {"name": "Nhà 5 tầng phố Nguyễn Văn Cừ, Long Biên, 56m2, MT 4.8m, kinh doanh, cho thuê, ô ", "property_type_name": "Nhà", "province_name": "Hà Nội", "district_name": "Long Biên", "ward_name": "Bồ Đề", "price_ty": 14.6, "area": 56.0, "price_per_m2_tr": 260.7, "bedroom_count": 4, "published_at": "2025-12-14", "thang": "2025-12", "phan_khuc": "10 - 20 tỷ"}, {"name": "Bán nhà mặt tiền đường số Chợ Tân Mỹ P. Tân Phú Q7, DT 4x10m (Giá bán 8,9tỷ - nh", "property_type_name": "Nhà", "province_name": "Hồ Chí Minh", "district_name": "7", "ward_name": "Tân Phú", "price_ty": 8.9, "area": 40.0, "price_per_m2_tr": 222.5, "bedroom_count": 2, "published_at": "2025-06-10", "thang": "2025-06", "phan_khuc": "5 - 10 tỷ"}, {"name": "Bán đất ngay sát KCN Đô Thị - Dịch vụ Bảo Hiệu 103m2 full thổ cư - giá 370 triệu", "property_type_name": "Đất", "province_name": "Hòa Bình", "district_name": "Yên Thủy", "ward_name": "Bảo Hiệu", "price_ty": 0.37, "area": 103.0, "price_per_m2_tr": 3.6, "bedroom_count": 0, "published_at": "2025-10-10", "thang": "2025-10", "phan_khuc": "< 2 tỷ"}, {"name": "Bán nhà Mỹ Hạnh Nam Đức Hoà Long An sổ hồng riêng DT 90m2. Giá 2tỷ380. LH", "property_type_name": "Nhà", "province_name": "Long An", "district_name": "Đức Hòa", "ward_name": "Mỹ Hạnh Nam", "price_ty": 2.38, "area": 90.0, "price_per_m2_tr": 26.4, "bedroom_count": 3, "published_at": "2025-08-29", "thang": "2025-08", "phan_khuc": "2 - 5 tỷ"}, {"name": "Căn Hộ Studio Haven Park giá 1.860 tỷ", "property_type_name": "Căn hộ chung cư", "province_name": "Hưng Yên", "district_name": "Văn Giang", "ward_name": "Xuân Quan", "price_ty": 1.86, "area": 29.3, "price_per_m2_tr": 63.5, "bedroom_count": 1, "published_at": "2025-07-04", "thang": "2025-07", "phan_khuc": "< 2 tỷ"}, {"name": "Hẻm trước nhà hơn 6m Đường Nguyễn Quý Anh 74m2 cấp 4", "property_type_name": "Nhà", "province_name": "Hồ Chí Minh", "district_name": "Tân Phú", "ward_name": "Tân Sơn Nhì", "price_ty": 5.8, "area": 74.0, "price_per_m2_tr": 78.4, "bedroom_count": 0, "published_at": "2025-12-09", "thang": "2025-12", "phan_khuc": "5 - 10 tỷ"}, {"name": "Bán nhanh căn hộ tòa M2 The Matrix One Premium, Lê Quang Đạo, 90m2, 12.75 tỷ, 2 ", "property_type_name": "Căn hộ chung cư", "province_name": "Hà Nội", "district_name": "Nam Từ Liêm", "ward_name": "Mễ Trì", "price_ty": 12.75, "area": 90.0, "price_per_m2_tr": 141.7, "bedroom_count": 2, "published_at": "2025-11-28", "thang": "2025-11", "phan_khuc": "10 - 20 tỷ"}, {"name": "Nhà trọ 1 trệt 1 lầu 10x28m mặt tiền kinh doanh gần chợ Thông Dụng, thu 35trieu ", "property_type_name": "Nhà", "province_name": "Bình Dương", "district_name": "Thuận An", "ward_name": "An Phú", "price_ty": 12.0, "area": 280.0, "price_per_m2_tr": 42.9, "bedroom_count": 0, "published_at": "2025-12-11", "thang": "2025-12", "phan_khuc": "10 - 20 tỷ"}, {"name": "Lê Phương cần bán nhanh căn hộ CC Star Hill, PMH, 133m2, 2PN, giá 13tỷ + ô xe hơ", "property_type_name": "Căn hộ chung cư", "province_name": "Hồ Chí Minh", "district_name": "7", "ward_name": "Tân Phú", "price_ty": 13.0, "area": 133.0, "price_per_m2_tr": 97.7, "bedroom_count": 3, "published_at": "2025-11-12", "thang": "2025-11", "phan_khuc": "10 - 20 tỷ"}, {"name": "Lô góc! 30m ra ô tô tránh, ngõ to, thông thoáng gần hồ, 38m2 x 5T, MT 5m ở luôn,", "property_type_name": "Nhà", "province_name": "Hà Nội", "district_name": "Hoàng Mai", "ward_name": "Đại Kim", "price_ty": 6.59, "area": 38.0, "price_per_m2_tr": 173.4, "bedroom_count": 0, "published_at": "2025-12-06", "thang": "2025-12", "phan_khuc": "5 - 10 tỷ"}, {"name": "Mặt phố láng trung-đống đa-lô góc- ôtô tải tránh-kinh doanh tuyệt vời-55m2-6 tần", "property_type_name": "Nhà", "province_name": "Hà Nội", "district_name": "Đống Đa", "ward_name": "Láng Hạ", "price_ty": 22.9, "area": 55.0, "price_per_m2_tr": 416.4, "bedroom_count": 5, "published_at": "2025-07-07", "thang": "2025-07", "phan_khuc": "> 20 tỷ"}];
+
+// =============================================================
+// CHART INSTANCES
+// =============================================================
+const CH = {};
+
+function destroyAll() {
+  Object.values(CH).forEach(c => { if(c) c.destroy(); });
+}
+
+// =============================================================
+// CHART BUILDERS
+// =============================================================
+const PALETTE = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6',
+                 '#06b6d4','#ec4899','#84cc16','#f97316','#6366f1'];
+
+Chart.defaults.font.family = "'Segoe UI', sans-serif";
+Chart.defaults.font.size   = 12;
+
+function buildLine(id, labels, data, color, suffix='') {
+  if(CH[id]) CH[id].destroy();
+  const ctx = document.getElementById(id);
+  if(!ctx) return;
+  CH[id] = new Chart(ctx, {
+    type:'line',
+    data:{ labels, datasets:[{
+      data, borderColor:color, backgroundColor:color+'28',
+      borderWidth:3, fill:true,
+      pointBackgroundColor:color, pointRadius:5, tension:.35
+    }] },
+    options:{
+      responsive:true, maintainAspectRatio:true,
+      plugins:{ legend:{display:false},
+        tooltip:{callbacks:{label:c=>' '+c.raw+suffix}} },
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:11}}},
+        y:{grid:{color:'#f1f5f9'},ticks:{font:{size:11}}}
+      }
+    }
+  });
+}
+
+function buildHBar(id, labels, data, baseColor='#3b82f6') {
+  if(CH[id]) CH[id].destroy();
+  const ctx = document.getElementById(id);
+  if(!ctx) return;
+  const bg = data.map((_,i) => `rgba(59,130,246,${1-i*0.07})`)
+  CH[id] = new Chart(ctx, {
+    type:'bar',
+    data:{ labels, datasets:[{data, backgroundColor:bg, borderRadius:5, borderSkipped:false}] },
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:true,
+      plugins:{ legend:{display:false},
+        tooltip:{callbacks:{label:c=>' '+c.raw.toFixed(1)+' tỷ'}} },
+      scales:{
+        x:{grid:{color:'#f1f5f9'},ticks:{font:{size:11}}},
+        y:{grid:{display:false},ticks:{font:{size:10}}}
+      }
+    }
+  });
+}
+
+function buildBar(id, labels, data, colors) {
+  if(CH[id]) CH[id].destroy();
+  const ctx = document.getElementById(id);
+  if(!ctx) return;
+  CH[id] = new Chart(ctx, {
+    type:'bar',
+    data:{ labels, datasets:[{data, backgroundColor:colors, borderRadius:7, borderSkipped:false}] },
+    options:{
+      responsive:true, maintainAspectRatio:true,
+      plugins:{ legend:{display:false},
+        tooltip:{callbacks:{label:c=>' '+c.raw.toLocaleString('vi')+' tin'}} },
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:11}}},
+        y:{grid:{color:'#f1f5f9'},ticks:{font:{size:11}}}
+      }
+    }
+  });
+}
+
+function buildDoughnut(id, labels, data) {
+  if(CH[id]) CH[id].destroy();
+  const ctx = document.getElementById(id);
+  if(!ctx) return;
+  CH[id] = new Chart(ctx, {
+    type:'doughnut',
+    data:{ labels, datasets:[{
+      data,
+      backgroundColor:PALETTE.slice(0,labels.length),
+      borderWidth:2, borderColor:'#fff'
+    }] },
+    options:{
+      responsive:true, maintainAspectRatio:true, cutout:'52%',
+      plugins:{
+        legend:{position:'right',labels:{font:{size:11},padding:10}},
+        tooltip:{callbacks:{label:c=>' '+c.label+': '+c.raw+' tin'}}
+      }
+    }
+  });
+}
+
+// =============================================================
+// AGGREGATE + RENDER
+// =============================================================
+function renderAll(data) {
+  if(!data || data.length === 0) {
+    // Show no-data on KPI
+    ['kpi_tong','kpi_gia','kpi_m2','kpi_dt'].forEach(id => {
+      document.getElementById(id).textContent = '0';
+    });
+    destroyAll();
+    return;
+  }
+
+  let sumPrice=0, sumArea=0, n=0;
+  const byTinh={}, byLoai={}, byThang={}, byPK={}, byQuan={};
+
+  data.forEach(r => {
+    if(!r.price_ty || !r.area) return;
+    sumPrice += r.price_ty; sumArea += r.area; n++;
+
+    // Tỉnh
+    if(!byTinh[r.province_name]) byTinh[r.province_name]={sum:0,cnt:0};
+    byTinh[r.province_name].sum += r.price_ty;
+    byTinh[r.province_name].cnt++;
+
+    // Loại
+    byLoai[r.property_type_name] = (byLoai[r.property_type_name]||0)+1;
+
+    // Tháng
+    if(r.thang) {
+      if(!byThang[r.thang]) byThang[r.thang]={count:0,sum:0};
+      byThang[r.thang].count++;
+      byThang[r.thang].sum += r.price_ty;
+    }
+
+    // Phân khúc
+    const pk = r.phan_khuc||'N/A';
+    byPK[pk] = (byPK[pk]||0)+1;
+
+    // Quận/huyện
+    if(r.district_name && r.district_name!=='nan') {
+      if(!byQuan[r.district_name]) byQuan[r.district_name]={sum:0,cnt:0};
+      byQuan[r.district_name].sum += r.price_ty;
+      byQuan[r.district_name].cnt++;
+    }
+  });
+
+  // --- KPIs ---
+  document.getElementById('kpi_tong').textContent = n.toLocaleString('vi');
+  document.getElementById('kpi_gia').textContent  = (sumPrice/n).toFixed(1)+' tỷ';
+  document.getElementById('kpi_dt').textContent   = (sumArea/n).toFixed(0)+' m²';
+  // price/m2
+  const pm2 = data.filter(r=>r.price_per_m2_tr>0).map(r=>r.price_per_m2_tr);
+  const avgPm2 = pm2.length ? pm2.reduce((a,b)=>a+b,0)/pm2.length : 0;
+  document.getElementById('kpi_m2').textContent   = avgPm2.toFixed(0)+' tr/m²';
+
+  // --- Trend: số tin theo tháng ---
+  const thKeys = Object.keys(byThang).sort();
+  buildLine('cTrend', thKeys.map(k=>k.replace('2025-','')), thKeys.map(k=>byThang[k].count), '#3b82f6', ' tin');
+
+  // --- Giá TB theo tháng ---
+  buildLine('cGiaThang', thKeys.map(k=>k.replace('2025-','')),
+    thKeys.map(k=>+(byThang[k].sum/byThang[k].count).toFixed(2)), '#ef4444', ' tỷ');
+
+  // --- Top 10 tỉnh (horizontal bar) ---
+  const tinhArr = Object.entries(byTinh)
+    .map(([k,v])=>([k,+(v.sum/v.cnt).toFixed(2)]))
+    .sort((a,b)=>b[1]-a[1]).slice(0,10).reverse();
+  buildHBar('cTinh', tinhArr.map(x=>x[0]), tinhArr.map(x=>x[1]));
+
+  // --- Loại BĐS (doughnut) ---
+  const loaiArr = Object.entries(byLoai).sort((a,b)=>b[1]-a[1]);
+  buildDoughnut('cLoai', loaiArr.map(x=>x[0]), loaiArr.map(x=>x[1]));
+
+  // --- Phân khúc (bar) ---
+  const pkOrder = ['< 2 tỷ','2 - 5 tỷ','5 - 10 tỷ','10 - 20 tỷ','> 20 tỷ'];
+  const pkColors= ['#10b981','#3b82f6','#f59e0b','#ef4444','#8b5cf6'];
+  buildBar('cPhanKhuc', pkOrder, pkOrder.map(k=>byPK[k]||0), pkColors);
+
+  // --- Top 10 quận/huyện ---
+  const quanArr = Object.entries(byQuan)
+    .map(([k,v])=>([k,+(v.sum/v.cnt).toFixed(2)]))
+    .sort((a,b)=>b[1]-a[1]).slice(0,10).reverse();
+  buildHBar('cQuan', quanArr.map(x=>x[0]), quanArr.map(x=>x[1]));
+
+  // --- Table ---
+  const badgeMap = {
+    'Nhà':'b-nha','Căn hộ chung cư':'b-chung',
+    'Đất':'b-dat','Biệt thự/Nhà liền kề':'b-biet',
+    'Shophouse':'b-shop'
+  };
+  const show = data.slice(0, 500);
+  document.getElementById('tbl_cnt').textContent =
+    `Hiển thị ${Math.min(show.length,500)} / ${data.length} tin`;
+  document.getElementById('tblBody').innerHTML = show.map((r,i)=>`
+    <tr>
+      <td style="color:var(--muted);font-size:.75rem">${i+1}</td>
+      <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.82rem" title="${r.name}">${r.name}</td>
+      <td><span class="badge ${badgeMap[r.property_type_name]||'b-other'}">${r.property_type_name}</span></td>
+      <td>${r.province_name}</td>
+      <td>${r.district_name}</td>
+      <td style="font-weight:800;color:var(--primary)">${r.price_ty.toFixed(2)}</td>
+      <td>${r.area}</td>
+      <td>${r.price_per_m2_tr}</td>
+      <td style="text-align:center">${r.bedroom_count||'-'}</td>
+      <td style="color:var(--muted);font-size:.8rem">${r.published_at}</td>
+    </tr>`).join('');
+}
+
+// =============================================================
+// FILTER
+// =============================================================
+function applyFilter() {
+  const tinh = document.getElementById('f_tinh').value;
+  const loai = document.getElementById('f_loai').value;
+  const khuc = document.getElementById('f_khuc').value;
+  const filtered = RAW.filter(r =>
+    (!tinh || r.province_name === tinh) &&
+    (!loai || r.property_type_name === loai) &&
+    (!khuc || r.phan_khuc === khuc)
+  );
+  renderAll(filtered);
+}
+
+function resetFilter() {
+  document.getElementById('f_tinh').value = '';
+  document.getElementById('f_loai').value = '';
+  document.getElementById('f_khuc').value = '';
+  renderAll(RAW);
+}
+
+// =============================================================
+// INIT
+// =============================================================
+document.addEventListener('DOMContentLoaded', () => renderAll(RAW));
+</script>
+</body>
+</html>
